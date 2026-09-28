@@ -127,8 +127,8 @@ export function AssetCard({ asset, onQuickUpdateStatus }: AssetCardProps) {
             </span>
             <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">
               {isRoad
-                ? `${(asset.specifications as any)?.length_km || 0} km • ${(asset.specifications as any)?.lane_count || 2}L`
-                : `${(asset.specifications as any)?.number_of_floors || 1} Flr • ${(asset.specifications as any)?.builtup_area_sqm || 0} m²`}
+                ? `${('length_km' in asset.specifications ? asset.specifications.length_km : 0) || 0} km • ${('lane_count' in asset.specifications ? asset.specifications.lane_count : 2) || 2}L`
+                : `${('number_of_floors' in asset.specifications ? asset.specifications.number_of_floors : 1) || 1} Flr • ${('builtup_area_sqm' in asset.specifications ? asset.specifications.builtup_area_sqm : 0) || 0} m²`}
             </span>
           </div>
         </div>

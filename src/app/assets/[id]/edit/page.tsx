@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ChevronLeft, Edit, AlertTriangle } from 'lucide-react';
 import { Asset } from '@/types';
-import { getAssetById } from '@/lib/data/assetService';
+import { getAssetById } from '@/lib/data/assetRepository';
 import { AssetForm } from '@/components/assets/AssetForm';
 
 export default function EditAssetPage() {

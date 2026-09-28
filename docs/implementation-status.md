@@ -6,15 +6,15 @@ Status report for the current branch. `Complete` means implemented and checked i
 | --- | --- | --- |
 | Framework and deployment | Partial | Next 15.5, strict TypeScript, CI build/typecheck, env example, and GitHub/Vercel setup notes are present. `origin` is configured, but the local worktree is not yet committed or pushed. |
 | Supabase session entry | Partial | Publishable-key clients, email/password login, active-profile middleware, and admin/officer create/edit route gates are present. Role accounts still must be created manually in Supabase Auth. |
-| Stakeholder demo identities | Partial | Four local-only demo credentials now open the mock UI during `npm run dev`; they never authenticate to Supabase and are disabled in production. Real five-role Auth accounts still require manual provisioning. |
-| Asset inventory persistence | Not complete | Existing asset pages and `assetService` still use prototype field names/localStorage fallbacks instead of the exact `current_stage_no`, `current_condition`, `location_sector` schema. |
+| Stakeholder identities | Partial | Local demo credentials are removed. Staff Auth accounts and active profiles must be provisioned manually in Supabase. |
+| Asset inventory persistence | Partial | Asset data operations now query/write Supabase schema columns only; validate them against the deployed project and complete the broader acceptance workflow. |
 | Lifecycle tracker and request wizard | Partial | Canonical 11-stage transition constants exist; detail UI, document-upload sequence, and trigger-aligned writes are not complete. |
 | Verification queue / maker-checker | Not complete | No `/verifications` implementation yet. |
 | Notifications | Blocked | No notification table/provider is in the supplied schema; persistent stakeholder delivery needs an approved storage/event design and notification channel. |
 | Financials, documents, conditions, activity | Not complete | Prototype components exist but are not wired to the supplied schema and private storage paths. |
 | Admin user/stage-document pages | Not complete | Routes and update workflows have not been implemented. |
 | Database authorization | Blocked | Supplied `supabase/schema.sql` grants anonymous reads and broad authenticated writes, and is missing several claimed lifecycle/document verification guards. This contradicts role/scope/private-file requirements. The schema was not modified. |
-| Demo seed | Partial | `supabase/seed.sql` adds 14 schema-shaped assets and sample history; no real storage files are seeded. Validate it against the target project before running. |
+| Demo seed | Partial | `supabase/seed.sql` adds 14 schema-shaped assets and sample history; no storage files are seeded. Validate it against the target project before running. |
 
 ## Stakeholder notification split
 
@@ -32,7 +32,7 @@ Keep the verification queue as the authoritative work list. Any email notificati
 ## Required gates before real deployment
 
 1. Have the database owner reconcile the actual deployed schema with `supabase/schema.sql` and enforce role, scope, maker-checker, document, and private-storage policies in Postgres/Storage.
-2. Replace local demo fallback and legacy lifecycle/status mapping with typed queries and writes for the supplied tables.
+2. Complete and test lifecycle/status mapping and mutations against the deployed tables.
 3. Complete and test request/document upload, verification, condition, and role-specific pages using separate Auth users.
 4. Configure Supabase Auth redirect URLs and deployment environment variables; commit and push to the configured GitHub `origin` after reviewing the worktree.
 5. Clear the existing repository-wide lint failures before requiring lint in CI.

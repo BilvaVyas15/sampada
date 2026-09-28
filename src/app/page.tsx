@@ -17,7 +17,7 @@ import {
   FileCheck,
 } from 'lucide-react';
 import { Asset, DashboardMetrics } from '@/types';
-import { getDashboardMetrics, getAssets } from '@/lib/data/assetService';
+import { getDashboardMetrics, getAssets } from '@/lib/data/assetRepository';
 import { StatCards } from '@/components/dashboard/StatCards';
 import { DashboardCharts } from '@/components/dashboard/DashboardCharts';
 import { NeedsAttentionWidget } from '@/components/dashboard/NeedsAttentionWidget';

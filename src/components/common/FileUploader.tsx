@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { UploadCloud, FileText, Image as ImageIcon, X, CheckCircle2, Loader2 } from 'lucide-react';
 import { AssetDocument } from '@/types';
-import { uploadAssetAttachment } from '@/lib/data/assetService';
+import { uploadAssetAttachment } from '@/lib/data/assetRepository';
 
 interface FileUploaderProps {
   attachments: AssetDocument[];

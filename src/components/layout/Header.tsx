@@ -13,56 +13,25 @@ import {
   LogOut,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { getActiveUser } from '@/lib/data/assetService';
-
-type HeaderProfile = {
-  full_name: string;
-  department: string;
-  role: 'admin' | 'officer' | 'inspector' | 'viewer';
-  scope_asset_type: string;
-  scope_sector: string;
-  isLocalDemo?: boolean;
-};
+import { getProfileById, type AppProfile } from '@/lib/data/profileService';
 
 export function Header() {
   const pathname = usePathname();
-  const [user, setUser] = useState<HeaderProfile | null>(null);
+  const [user, setUser] = useState<AppProfile | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
     const loadProfile = async () => {
-      if (process.env.NODE_ENV !== 'production') {
-        const demoRole = document.cookie
-          .split('; ')
-          .find((cookie) => cookie.startsWith('sampada_local_demo='))
-          ?.split('=')[1];
-        if (demoRole) {
-          const demoUser = getActiveUser();
-          if (active) {
-            setUser({
-              full_name: demoUser.full_name,
-              department: demoUser.department,
-              role: demoRole as HeaderProfile['role'],
-              scope_asset_type: 'all',
-              scope_sector: 'all',
-              isLocalDemo: true,
-            });
-          }
-          return;
-        }
-      }
-
       try {
         const supabase = createClient();
         const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (!authUser) return;
-        const { data } = await supabase
-          .from('profiles')
-          .select('full_name, department, role, scope_asset_type, scope_sector')
-          .eq('id', authUser.id)
-          .maybeSingle();
-        if (active && data) setUser({ ...(data as HeaderProfile), isLocalDemo: false });
+        if (!authUser) {
+          if (active) setUser(null);
+          return;
+        }
+        const profile = await getProfileById(authUser.id);
+        if (active && profile) setUser(profile);
       } catch {
         if (active) setUser(null);
       }
@@ -72,13 +41,6 @@ export function Header() {
   }, [pathname]);
 
   const handleSignOut = async () => {
-    if (process.env.NODE_ENV !== 'production' && document.cookie.includes('sampada_local_demo=')) {
-      document.cookie = 'sampada_local_demo=; Path=/; Max-Age=0; SameSite=Lax';
-      localStorage.removeItem('sampada_demo_role_v2');
-      window.location.assign('/login');
-      return;
-    }
-
     const supabase = createClient();
     await supabase.auth.signOut();
     window.location.assign('/login');
@@ -94,7 +56,7 @@ export function Header() {
     ? 'Viewing: All assets'
     : `Viewing: ${user?.scope_asset_type === 'road' ? 'Roads' : user?.scope_asset_type === 'building' ? 'Buildings' : 'All assets'}${user?.scope_sector && user.scope_sector !== 'all' ? ` - ${user.scope_sector.replaceAll('_', ' ')}` : ''}`;
 
-  if (pathname === '/login' || pathname === '/access-denied') return null;
+  if (pathname === '/login' || pathname === '/access-denied' || pathname === '/supabase-not-configured') return null;
 
   return (
     <header className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 text-white shadow-md">
@@ -104,7 +66,7 @@ export function Header() {
           <span className="hidden sm:inline text-slate-300">Road & Building Asset Lifecycle - Gandhinagar</span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-slate-300">{user?.isLocalDemo ? 'Local demo data only' : user ? scopeLabel : 'Loading profile…'}</span>
+          <span className="text-slate-300">{user ? scopeLabel : 'Loading profile…'}</span>
           {user && <span className="hidden sm:inline text-slate-300">{user.role}</span>}
           {user && (
             <button onClick={handleSignOut} aria-label="Sign out" title="Sign out" className="rounded p-2 text-slate-200 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2">

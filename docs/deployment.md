@@ -9,15 +9,15 @@
 
 ## Supabase readiness blocker
 
-The checked-in `supabase/schema.sql` policies grant anonymous reads on profiles, assets, lifecycle history, documents, condition logs, and storage objects. They also grant every authenticated user broad writes to application tables. In addition, this local SQL file does not contain the brief's claimed checks for valid stage transitions, one pending request, different requester/verifier, mandatory documents, or rejection remarks. It has only the profile-creation, history-verification stage update, and condition-log update triggers. The deployed Supabase project may differ; compare it with the checked-in file in the Dashboard before proceeding.
+The checked-in `supabase/schema.sql` policies grant anonymous reads on profiles, assets, lifecycle history, documents, condition logs, and storage objects. They also grant every authenticated user broad writes to application tables. In addition, this SQL file does not contain the claimed checks for valid stage transitions, one pending request, different requester/verifier, mandatory documents, or rejection remarks. It has only the profile-creation, history-verification stage update, and condition-log update triggers. The deployed Supabase project may differ; compare it with the checked-in file in the Dashboard before proceeding.
 
-Middleware and hidden UI controls cannot secure direct Supabase API or Storage requests. Do not deploy real government records or files until the database policies and triggers have been reviewed and corrected by the database owner. The schema was intentionally not changed for this setup task.
+Middleware and hidden UI controls cannot secure direct Supabase API or Storage requests. Do not deploy real government records or files until the database policies and triggers have been reviewed and corrected by the database owner.
 
-Create staff accounts manually in Supabase Auth with email and password; there is no public registration flow. The profile trigger creates a profile. Assign the intended `role`, `scope_asset_type`, `scope_sector`, and `is_active` through the approved administrative process. Follow [Demo Account Setup](demo-accounts.md) for non-production identities, then confirm each role with separate accounts before onboarding real users.
+Create staff accounts manually in Supabase Auth with email and password; there is no public registration flow. The profile trigger creates a profile. Assign the intended `role`, `scope_asset_type`, `scope_sector`, and `is_active` through the approved administrative process. Confirm each role with separate accounts before onboarding real users.
 
 ## GitHub and deployment
 
-The working copy's `origin` is configured as `https://github.com/BilvaVyas15/sampada.git`. The remote currently has no branches, and local changes have not been committed or pushed. After reviewing and committing the current worktree, push the branch:
+The working copy's `origin` is configured as `https://github.com/BilvaVyas15/sampada.git`. Push reviewed changes to the tracking branch:
 
 ```powershell
 git push -u origin main
@@ -29,4 +29,4 @@ For Vercel, import the GitHub repository, select the Next.js framework preset, a
 
 ## Current implementation status
 
-The initial prototype contains mock-backed pages and legacy lifecycle fields that do not match the supplied schema. Authentication setup has been moved toward Supabase sessions and role-aware route gating, but the asset data layer and lifecycle workflow still need conversion to the exact schema before acceptance testing. The CI job intentionally checks type safety and the production build; the existing repository-wide lint baseline has pre-existing failures and should be cleaned up before adding lint as a required CI gate.
+The app uses Supabase Auth, profile lookup, and Supabase-backed data operations only. The broader lifecycle workflow and the checked-in database's permissive authorization policies remain release gates; confirm the deployed schema and RLS before using real records.

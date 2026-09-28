@@ -3,6 +3,11 @@ export type UserRole = 'Admin' | 'Officer' | 'Inspector' | 'Viewer';
 export type AssetType = 'Road' | 'Building';
 
 export type AssetStatus =
+  | 'Proposed'
+  | 'Administrative Approval'
+  | 'Technical Sanction'
+  | 'Tender / Work Order'
+  | 'Handed Over'
   | 'Planned'
   | 'Under Construction'
   | 'Completed'
@@ -11,7 +16,7 @@ export type AssetStatus =
   | 'Needs Attention'
   | 'Retired';
 
-export type AssetCondition = 'Good' | 'Fair' | 'Poor' | 'Critical';
+export type AssetCondition = 'Good' | 'Fair' | 'Poor' | 'Critical' | 'Not Assessed';
 
 export type DocumentVerificationStatus = 'Pending' | 'Verified' | 'Rejected';
 
@@ -62,6 +67,7 @@ export interface AssetDocument {
   id: string;
   asset_id: string;
   history_id?: string;
+  file_path?: string;
   doc_type: string;
   title: string;
   file_url: string;
@@ -105,6 +111,7 @@ export interface BuildingSpecifications {
 
 export interface Asset {
   id: string;
+  current_stage_no?: number;
   asset_code: string;
   title: string;
   asset_type: AssetType;
@@ -113,6 +120,7 @@ export interface Asset {
   condition: AssetCondition;
   pending_target_status?: AssetStatus | null;
   location_district: string; // Focused on Gandhinagar
+  location_sector?: string;
   location_taluka: string;
   location_address: string;
   latitude?: number;
@@ -125,7 +133,7 @@ export interface Asset {
   assigned_officer_name: string;
   assigned_officer_contact?: string;
   description: string;
-  specifications: RoadSpecifications | BuildingSpecifications | Record<string, any>;
+  specifications: RoadSpecifications | BuildingSpecifications | Record<string, unknown>;
   photos: string[];
   documents: AssetDocument[];
   created_by?: string;
@@ -149,6 +157,13 @@ export interface AssetLifecycleHistory {
     | 'ASSET_CREATED'
     | 'EDIT_DETAILS';
   verification_status: DocumentVerificationStatus;
+  from_stage_no?: number | null;
+  to_stage_no?: number;
+  reference_number?: string | null;
+  amount?: number | null;
+  effective_date?: string | null;
+  rejection_remarks?: string | null;
+  verified_at?: string | null;
   remarks: string;
   changed_by_id?: string;
   changed_by_name: string;
@@ -186,131 +201,3 @@ export interface DashboardMetrics {
   criticalAssets: Asset[];
 }
 
-// Map of required document types for each transition
-export const TRANSITION_REQUIRED_DOCUMENTS: Record<string, RequiredDocumentCheck[]> = {
-  'Planned->Under Construction': [
-    {
-      doc_type: 'ADMINISTRATIVE_APPROVAL',
-      label: 'Administrative Approval (AA)',
-      description: 'Official Government Order issuing Administrative Approval with budget sanction.',
-      is_mandatory: true,
-    },
-    {
-      doc_type: 'TECHNICAL_SANCTION',
-      label: 'Technical Sanction (TS)',
-      description: 'Approved Technical Sanction design & detailed cost estimation report.',
-      is_mandatory: true,
-    },
-  ],
-  'Under Construction->Completed': [
-    {
-      doc_type: 'COMPLETION_CERTIFICATE',
-      label: 'Work Completion Certificate',
-      description: 'Signed completion certificate by Executive Engineer.',
-      is_mandatory: true,
-    },
-    {
-      doc_type: 'MEASUREMENT_BOOK',
-      label: 'Measurement Book (MB) Summary',
-      description: 'Final MB bill entry excerpt signed by site auditor.',
-      is_mandatory: true,
-    },
-    {
-      doc_type: 'SITE_AUDIT_PHOTOS',
-      label: 'Post-Construction Site Inspection Photos',
-      description: 'Geotagged photos showing completed pavement or structural facade.',
-      is_mandatory: true,
-    },
-  ],
-  'Completed->Operational': [
-    {
-      doc_type: 'HANDOVER_LETTER',
-      label: 'Asset Handover & Takeover Letter',
-      description: 'Formal letter surrendering asset to operating municipal authority.',
-      is_mandatory: true,
-    },
-    {
-      doc_type: 'SAFETY_CLEARANCE',
-      label: 'Quality & Structural Safety Clearance',
-      description: 'Third-party structural safety or friction audit clearance.',
-      is_mandatory: false,
-    },
-  ],
-  'Operational->Under Maintenance': [
-    {
-      doc_type: 'DAMAGE_INSPECTION_REPORT',
-      label: 'Inspection Audit & Damage Assessment Report',
-      description: 'Detailed pavement distress or structural damage defect report.',
-      is_mandatory: true,
-    },
-    {
-      doc_type: 'DEFECT_PHOTOS',
-      label: 'Defect Site Evidence Photos',
-      description: 'Photographic evidence showing distress, potholes, or cracks.',
-      is_mandatory: true,
-    },
-  ],
-  'Under Maintenance->Operational': [
-    {
-      doc_type: 'MAINTENANCE_COMPLETION',
-      label: 'Maintenance Work Completion Certificate',
-      description: 'Verification that resurfacing or structural repair is completed.',
-      is_mandatory: true,
-    },
-    {
-      doc_type: 'QUALITY_TEST_REPORT',
-      label: 'Post-Repair Quality Test Report',
-      description: 'Asphalt compaction or concrete cube test report.',
-      is_mandatory: true,
-    },
-  ],
-  'Operational->Needs Attention': [
-    {
-      doc_type: 'CRITICAL_RISK_AUDIT',
-      label: 'Critical Infrastructure Risk Audit Report',
-      description: 'Inspector report highlighting immediate safety risk or distress.',
-      is_mandatory: true,
-    },
-  ],
-  'Needs Attention->Under Maintenance': [
-    {
-      doc_type: 'REPAIR_WORK_ORDER',
-      label: 'Emergency Maintenance Tender Work Order',
-      description: 'Official tender approval and work order allocated to contractor.',
-      is_mandatory: true,
-    },
-  ],
-  'Operational->Retired': [
-    {
-      doc_type: 'DECOMMISSION_APPROVAL',
-      label: 'Decommissioning & Demolition Sanction',
-      description: 'High-level committee approval order for asset retirement.',
-      is_mandatory: true,
-    },
-  ],
-};
-
-export function getRequiredDocumentsForTransition(
-  currentStatus: AssetStatus,
-  targetStatus: AssetStatus
-): RequiredDocumentCheck[] {
-  const key = `${currentStatus}->${targetStatus}`;
-  if (TRANSITION_REQUIRED_DOCUMENTS[key]) {
-    return TRANSITION_REQUIRED_DOCUMENTS[key];
-  }
-  // Default fallback documents for any other transition
-  return [
-    {
-      doc_type: 'GENERAL_AUDIT_REPORT',
-      label: 'Status Transition Audit Report',
-      description: 'Official inspection notes and justification for status change.',
-      is_mandatory: true,
-    },
-    {
-      doc_type: 'SITE_PHOTO',
-      label: 'Current Site Condition Photo',
-      description: 'Current photograph supporting the requested status change.',
-      is_mandatory: true,
-    },
-  ];
-}

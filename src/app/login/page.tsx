@@ -4,16 +4,14 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Building2, Lock, Mail, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { setActiveUserRole } from '@/lib/data/assetService';
-import type { UserRole } from '@/types';
+import { getProfileById } from '@/lib/data/profileService';
 
-const LOCAL_DEMO_PASSWORD = 'SampadaDemo2026!';
-const LOCAL_DEMO_ACCOUNTS: { email: string; role: UserRole }[] = [
-  { email: 'admin.demo@sampada.local', role: 'Admin' },
-  { email: 'officer.demo@sampada.local', role: 'Officer' },
-  { email: 'inspector.demo@sampada.local', role: 'Inspector' },
-  { email: 'viewer.demo@sampada.local', role: 'Viewer' },
-];
+const ROLE_HOME: Record<string, string> = {
+  admin: '/',
+  officer: '/assets',
+  inspector: '/assets',
+  viewer: '/assets',
+};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -28,32 +26,34 @@ export default function LoginPage() {
     setErrorMsg('');
 
     try {
-      const localDemoAccount = LOCAL_DEMO_ACCOUNTS.find(
-        (account) => account.email === email.trim().toLowerCase()
-      );
-      if (
-        process.env.NODE_ENV !== 'production' &&
-        localDemoAccount &&
-        password === LOCAL_DEMO_PASSWORD
-      ) {
-        document.cookie = `sampada_local_demo=${localDemoAccount.role.toLowerCase()}; Path=/; Max-Age=28800; SameSite=Lax`;
-        setActiveUserRole(localDemoAccount.role);
-        router.replace('/');
-        router.refresh();
-        return;
-      }
-
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) setErrorMsg(error.message);
-      else {
-        router.push('/');
-        router.refresh();
+      if (error || !data.user) {
+        setErrorMsg(error?.message ?? 'Login failed. Check your email and password.');
+        return;
       }
+
+      let profile;
+      try {
+        profile = await getProfileById(data.user.id);
+      } catch {
+        await supabase.auth.signOut();
+        setErrorMsg('Unable to verify your account. Please try again or contact your administrator.');
+        return;
+      }
+
+      if (!profile || !profile.is_active) {
+        await supabase.auth.signOut();
+        setErrorMsg('Access restricted');
+        return;
+      }
+
+      router.replace(ROLE_HOME[profile.role] ?? '/access-denied');
+      router.refresh();
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : 'Login failed. Check your Supabase configuration.');
     } finally {
@@ -132,32 +132,34 @@ export default function LoginPage() {
           Accounts are provisioned by your Sampada administrator.
         </p>
 
-        {process.env.NODE_ENV !== 'production' && (
-          <section aria-label="Local demo accounts" className="space-y-3 border-t border-amber-300 bg-amber-50 p-4 text-sm text-slate-800">
-            <div>
-              <h3 className="font-bold">Local demo access</h3>
-              <p>Development only. These accounts use sample data in this browser, not Supabase.</p>
-            </div>
-            <ul className="space-y-2">
-              {LOCAL_DEMO_ACCOUNTS.map((account) => (
-                <li key={account.email} className="flex flex-wrap items-center justify-between gap-2">
-                  <span>{account.role}: <code>{account.email}</code></span>
-                  <button
-                    type="button"
-                    className="rounded border border-slate-400 px-2 py-1 font-semibold hover:bg-white"
-                    onClick={() => {
-                      setEmail(account.email);
-                      setPassword(LOCAL_DEMO_PASSWORD);
-                    }}
-                  >
-                    Use account
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <p>Password for all four: <code>{LOCAL_DEMO_PASSWORD}</code></p>
-          </section>
-        )}
+        {/* Demo Credentials */}
+        <div className="border-t border-slate-200 pt-4 space-y-2">
+          <p className="text-xs text-center font-bold text-slate-500 uppercase tracking-wider">
+            Demo Credentials (Click to fill)
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: '🛡️ Admin', email: 'admin@sampada.demo', pass: 'Demo1234!' },
+              { label: '👷 Officer', email: 'officer@sampada.demo', pass: 'Demo1234!' },
+              { label: '🔍 Inspector', email: 'inspector@sampada.demo', pass: 'Demo1234!' },
+              { label: '👁️ Viewer', email: 'viewer@sampada.demo', pass: 'Demo1234!' },
+            ].map((demo) => (
+              <button
+                key={demo.email}
+                type="button"
+                onClick={() => { setEmail(demo.email); setPassword(demo.pass); }}
+                className="text-left p-2 rounded-lg border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 transition-colors"
+              >
+                <div className="text-xs font-bold text-slate-800">{demo.label}</div>
+                <div className="text-[10px] text-slate-500 font-mono truncate">{demo.email}</div>
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-center text-slate-400">
+            Password for all demo accounts: <span className="font-mono font-bold">Demo1234!</span>
+          </p>
+        </div>
+
       </div>
     </div>
   );

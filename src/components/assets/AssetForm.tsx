@@ -18,16 +18,14 @@ import {
 } from 'lucide-react';
 import {
   Asset,
-  AssetCondition,
   AssetDocument,
-  AssetStatus,
   AssetType,
   BuildingSpecifications,
   BuildingSubtype,
   RoadSpecifications,
   RoadSubtype,
 } from '@/types';
-import { createAsset, updateAsset } from '@/lib/data/assetService';
+import { createAsset, updateAsset } from '@/lib/data/assetRepository';
 import { FileUploader } from '@/components/common/FileUploader';
 
 interface AssetFormProps {
@@ -60,18 +58,6 @@ const BUILDING_SUBTYPES: BuildingSubtype[] = [
   'Building Drainage System',
 ];
 
-const STATUSES: AssetStatus[] = [
-  'Planned',
-  'Under Construction',
-  'Completed',
-  'Operational',
-  'Under Maintenance',
-  'Needs Attention',
-  'Retired',
-];
-
-const CONDITIONS: AssetCondition[] = ['Good', 'Fair', 'Poor', 'Critical'];
-
 export function AssetForm({ initialAsset, isEdit = false }: AssetFormProps) {
   const router = useRouter();
 
@@ -84,8 +70,6 @@ export function AssetForm({ initialAsset, isEdit = false }: AssetFormProps) {
   const [subType, setSubType] = useState<string>(
     initialAsset?.sub_type || (assetType === 'Road' ? ROAD_SUBTYPES[0] : BUILDING_SUBTYPES[0])
   );
-  const [status, setStatus] = useState<AssetStatus>(initialAsset?.status || 'Planned');
-  const [condition, setCondition] = useState<AssetCondition>(initialAsset?.condition || 'Good');
 
   // Location State
   const district = 'Gandhinagar';
@@ -96,24 +80,17 @@ export function AssetForm({ initialAsset, isEdit = false }: AssetFormProps) {
 
   // Financial & Administration State
   const [estimatedCost, setEstimatedCost] = useState<number>(initialAsset?.estimated_cost || 5000000);
-  const [actualCost, setActualCost] = useState<number | undefined>(initialAsset?.actual_cost || 4800000);
   const [constructionYear, setConstructionYear] = useState<number>(
     initialAsset?.construction_year || new Date().getFullYear()
   );
-  const [managingDepartment, setManagingDepartment] = useState(
-    initialAsset?.managing_department || 'R&B Department - Gandhinagar Executive Circle'
-  );
+  const managingDepartment = initialAsset?.managing_department || 'R&B Department - Gandhinagar Executive Circle';
   const [assignedOfficerName, setAssignedOfficerName] = useState(
     initialAsset?.assigned_officer_name || 'Er. Rajesh Patel (Executive Engineer, R&B)'
-  );
-  const [assignedOfficerContact, setAssignedOfficerContact] = useState(
-    initialAsset?.assigned_officer_contact || '+91 98250 11223'
   );
   const [description, setDescription] = useState(initialAsset?.description || '');
 
   // Files & Attachments
   const [documents, setDocuments] = useState<AssetDocument[]>(initialAsset?.documents || []);
-  const [photoUrls, setPhotoUrls] = useState<string[]>(initialAsset?.photos || []);
 
   // Road Specific Specifications
   const [roadSpecs, setRoadSpecs] = useState<RoadSpecifications>({
@@ -173,22 +150,20 @@ export function AssetForm({ initialAsset, isEdit = false }: AssetFormProps) {
         title,
         asset_type: assetType,
         sub_type: subType,
-        status,
-        condition,
+        status: (initialAsset?.status ?? 'Proposed') as import('@/types').AssetStatus,
+        condition: (initialAsset?.condition ?? 'Not Assessed') as import('@/types').AssetCondition,
+        photos: initialAsset?.photos ?? ([] as string[]),
         location_district: district,
         location_taluka: taluka,
         location_address: address,
         latitude,
         longitude,
         estimated_cost: Number(estimatedCost) || 0,
-        actual_cost: Number(actualCost) || 0,
         construction_year: Number(constructionYear) || new Date().getFullYear(),
         managing_department: managingDepartment,
         assigned_officer_name: assignedOfficerName,
-        assigned_officer_contact: assignedOfficerContact,
         description,
         specifications,
-        photos: photoArray.length > 0 ? photoArray : photoUrls,
         documents,
       };
 
@@ -199,8 +174,8 @@ export function AssetForm({ initialAsset, isEdit = false }: AssetFormProps) {
         const created = await createAsset(payload);
         router.push(`/assets/${created.id}`);
       }
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to submit asset form.');
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to submit asset form.');
       setSubmitting(false);
     }
   };
@@ -340,41 +315,6 @@ export function AssetForm({ initialAsset, isEdit = false }: AssetFormProps) {
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-              Initial Lifecycle Stage
-            </label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as AssetStatus)}
-              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-semibold"
-            >
-              {STATUSES.map((st) => (
-                <option key={st} value={st}>
-                  {st}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-              Initial Condition Health Rating
-            </label>
-            <select
-              value={condition}
-              onChange={(e) => setCondition(e.target.value as AssetCondition)}
-              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-semibold"
-            >
-              {CONDITIONS.map((cd) => (
-                <option key={cd} value={cd}>
-                  {cd}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
       </div>
 
       {/* 3. Technical Specifications */}
@@ -448,7 +388,7 @@ export function AssetForm({ initialAsset, isEdit = false }: AssetFormProps) {
                 <select
                   value={roadSpecs.pavement_type}
                   onChange={(e) =>
-                    setRoadSpecs({ ...roadSpecs, pavement_type: e.target.value as any })
+                    setRoadSpecs({ ...roadSpecs, pavement_type: e.target.value as RoadSpecifications['pavement_type'] })
                   }
                   className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
                 >
@@ -466,7 +406,7 @@ export function AssetForm({ initialAsset, isEdit = false }: AssetFormProps) {
                 <select
                   value={roadSpecs.traffic_category}
                   onChange={(e) =>
-                    setRoadSpecs({ ...roadSpecs, traffic_category: e.target.value as any })
+                    setRoadSpecs({ ...roadSpecs, traffic_category: e.target.value as RoadSpecifications['traffic_category'] })
                   }
                   className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
                 >
@@ -567,7 +507,7 @@ export function AssetForm({ initialAsset, isEdit = false }: AssetFormProps) {
                 <select
                   value={bldgSpecs.structure_type}
                   onChange={(e) =>
-                    setBldgSpecs({ ...bldgSpecs, structure_type: e.target.value as any })
+                    setBldgSpecs({ ...bldgSpecs, structure_type: e.target.value as BuildingSpecifications['structure_type'] })
                   }
                   className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
                 >
@@ -585,7 +525,7 @@ export function AssetForm({ initialAsset, isEdit = false }: AssetFormProps) {
                 <select
                   value={bldgSpecs.occupancy_status}
                   onChange={(e) =>
-                    setBldgSpecs({ ...bldgSpecs, occupancy_status: e.target.value as any })
+                    setBldgSpecs({ ...bldgSpecs, occupancy_status: e.target.value as BuildingSpecifications['occupancy_status'] })
                   }
                   className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
                 >
@@ -680,59 +620,30 @@ export function AssetForm({ initialAsset, isEdit = false }: AssetFormProps) {
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-              Sanctioned Cost (₹ INR) <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="number"
-              required
-              min="0"
-              value={estimatedCost}
-              onChange={(e) => setEstimatedCost(Number(e.target.value))}
-              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-bold"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-              Actual Expended Cost (₹ INR)
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={actualCost ?? ''}
-              onChange={(e) => setActualCost(e.target.value ? Number(e.target.value) : undefined)}
-              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
-            />
-          </div>
+        <div>
+          <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+            Estimated Cost (₹ INR) <span className="text-rose-500">*</span>
+          </label>
+          <input
+            type="number"
+            required
+            min="0"
+            value={estimatedCost}
+            onChange={(e) => setEstimatedCost(Number(e.target.value))}
+            className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white font-bold"
+          />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-              Assigned Executive Nodal Officer
-            </label>
-            <input
-              type="text"
-              value={assignedOfficerName}
-              onChange={(e) => setAssignedOfficerName(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-              Officer Contact Phone
-            </label>
-            <input
-              type="text"
-              value={assignedOfficerContact}
-              onChange={(e) => setAssignedOfficerContact(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
-            />
-          </div>
+        <div>
+          <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+            Assigned Executive Nodal Officer
+          </label>
+          <input
+            type="text"
+            value={assignedOfficerName}
+            onChange={(e) => setAssignedOfficerName(e.target.value)}
+            className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
+          />
         </div>
 
         <div className="text-xs">

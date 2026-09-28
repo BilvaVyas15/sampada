@@ -14,7 +14,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { Asset, AssetLifecycleHistory } from '@/types';
-import { verifyDocumentAndTransition } from '@/lib/data/assetService';
+import { verifyDocumentAndTransition } from '@/lib/data/assetRepository';
 
 interface VerificationApprovalModalProps {
   asset: Asset;
@@ -45,8 +45,8 @@ export function VerificationApprovalModal({
       await verifyDocumentAndTransition(historyItem.id, action, verificationNotes);
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Verification action failed.');
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Verification action failed.');
     } finally {
       setSubmitting(false);
     }
@@ -102,7 +102,7 @@ export function VerificationApprovalModal({
             </div>
 
             <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 text-slate-600 dark:text-slate-300">
-              <strong>Engineer Remarks:</strong> "{historyItem.remarks}"
+              <strong>Engineer Remarks:</strong> &quot;{historyItem.remarks}&quot;
             </div>
           </div>
 

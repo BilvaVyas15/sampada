@@ -118,7 +118,7 @@ export default function SchemaPage() {
           <li>Set environment variables in your <code>.env.local</code> file:
             <pre className="mt-1 p-2 bg-slate-950 rounded text-emerald-400 font-mono text-[11px]">
               NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co{"\n"}
-              NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+              NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
             </pre>
           </li>
         </ol>

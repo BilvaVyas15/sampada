@@ -12,6 +12,11 @@ interface AssetFiltersProps {
 }
 
 const STATUSES: AssetStatus[] = [
+  'Proposed',
+  'Administrative Approval',
+  'Technical Sanction',
+  'Tender / Work Order',
+  'Handed Over',
   'Planned',
   'Under Construction',
   'Completed',
@@ -21,7 +26,7 @@ const STATUSES: AssetStatus[] = [
   'Retired',
 ];
 
-const CONDITIONS: AssetCondition[] = ['Good', 'Fair', 'Poor', 'Critical'];
+const CONDITIONS: AssetCondition[] = ['Good', 'Fair', 'Poor', 'Critical', 'Not Assessed'];
 
 export function AssetFilters({
   filters,
@@ -101,7 +106,7 @@ export function AssetFilters({
           </label>
           <select
             value={filters.status}
-            onChange={(e) => onFilterChange({ status: e.target.value as any })}
+            onChange={(e) => onFilterChange({ status: e.target.value as AssetFilterState['status'] })}
             className="w-full py-2 px-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
           >
             <option value="ALL">All Statuses</option>
@@ -120,7 +125,7 @@ export function AssetFilters({
           </label>
           <select
             value={filters.condition}
-            onChange={(e) => onFilterChange({ condition: e.target.value as any })}
+            onChange={(e) => onFilterChange({ condition: e.target.value as AssetFilterState['condition'] })}
             className="w-full py-2 px-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
           >
             <option value="ALL">All Conditions</option>
@@ -140,7 +145,7 @@ export function AssetFilters({
           <select
             value={`${filters.sortBy}-${filters.sortOrder}`}
             onChange={(e) => {
-              const [sortBy, sortOrder] = e.target.value.split('-') as [any, any];
+              const [sortBy, sortOrder] = e.target.value.split('-') as [AssetFilterState['sortBy'], AssetFilterState['sortOrder']];
               onFilterChange({ sortBy, sortOrder });
             }}
             className="w-full py-2 px-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"

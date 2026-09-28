@@ -15,7 +15,7 @@ import {
   FileCheck,
 } from 'lucide-react';
 import { Asset, DashboardMetrics } from '@/types';
-import { getAssets, getDashboardMetrics } from '@/lib/data/assetService';
+import { getAssets, getDashboardMetrics } from '@/lib/data/assetRepository';
 import { formatINR } from '@/lib/utils';
 
 export default function ReportsPage() {

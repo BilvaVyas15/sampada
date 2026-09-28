@@ -11,7 +11,7 @@ import {
   Info,
 } from 'lucide-react';
 import { Asset, AssetCondition, AssetDocument, AssetStatus } from '@/types';
-import { submitStatusChangeRequest } from '@/lib/data/assetService';
+import { submitStatusChangeRequest } from '@/lib/data/assetRepository';
 import { DocumentUploadWorkflow } from './DocumentUploadWorkflow';
 
 interface StatusUpdateModalProps {
@@ -22,16 +22,20 @@ interface StatusUpdateModalProps {
 }
 
 const ALL_STATUSES: AssetStatus[] = [
-  'Planned',
+  'Proposed',
+  'Administrative Approval',
+  'Technical Sanction',
+  'Tender / Work Order',
   'Under Construction',
   'Completed',
+  'Handed Over',
   'Operational',
   'Under Maintenance',
   'Needs Attention',
   'Retired',
 ];
 
-const ALL_CONDITIONS: AssetCondition[] = ['Good', 'Fair', 'Poor', 'Critical'];
+const ALL_CONDITIONS: AssetCondition[] = ['Good', 'Fair', 'Poor', 'Critical', 'Not Assessed'];
 
 export function StatusUpdateModal({
   asset,
@@ -68,8 +72,8 @@ export function StatusUpdateModal({
       );
       onSuccess(result.asset);
       onClose();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to submit status change request.');
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to submit status change request.');
     } finally {
       setSubmitting(false);
     }

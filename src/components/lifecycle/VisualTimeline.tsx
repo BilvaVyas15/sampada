@@ -166,7 +166,7 @@ export function VisualTimeline({ history }: VisualTimelineProps) {
                   <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">
                     Submitted by: {item.changed_by_name} ({item.changed_by_role})
                   </div>
-                  "{item.remarks}"
+                  &quot;{item.remarks}&quot;
                 </div>
 
                 {/* Verification Sign-Off Box if Verified/Rejected */}
@@ -178,7 +178,7 @@ export function VisualTimeline({ history }: VisualTimelineProps) {
                     </div>
                     {item.verification_notes && (
                       <p className="text-[11px] text-emerald-800 dark:text-emerald-300">
-                        Audit Note: "{item.verification_notes}"
+                        Audit Note: &quot;{item.verification_notes}&quot;
                       </p>
                     )}
                   </div>

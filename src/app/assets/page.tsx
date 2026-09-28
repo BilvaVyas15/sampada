@@ -15,7 +15,8 @@ import {
   Filter,
 } from 'lucide-react';
 import { Asset, AssetFilterState, AssetType } from '@/types';
-import { getAssets, getActiveUser } from '@/lib/data/assetService';
+import { getAssets } from '@/lib/data/assetRepository';
+import { getCurrentProfile } from '@/lib/data/profileService';
 import { AssetFilters } from '@/components/assets/AssetFilters';
 import { AssetCard } from '@/components/assets/AssetCard';
 import { AssetTable } from '@/components/assets/AssetTable';
@@ -33,6 +34,12 @@ const DEFAULT_FILTERS: AssetFilterState = {
   sortOrder: 'desc',
 };
 
+const VALID_STATUS_FILTERS: AssetFilterState['status'][] = [
+  'ALL', 'Proposed', 'Administrative Approval', 'Technical Sanction',
+  'Tender / Work Order', 'Under Construction', 'Completed', 'Handed Over',
+  'Operational', 'Under Maintenance', 'Needs Attention', 'Retired', 'Planned',
+];
+
 function AssetsInventoryContent() {
   const searchParams = useSearchParams();
   const typeParam = searchParams.get('type') as AssetType | null;
@@ -42,7 +49,9 @@ function AssetsInventoryContent() {
   const [filters, setFilters] = useState<AssetFilterState>({
     ...DEFAULT_FILTERS,
     assetType: typeParam || 'ALL',
-    status: (statusParam as any) || 'ALL',
+    status: (statusParam && VALID_STATUS_FILTERS.includes(statusParam as AssetFilterState['status'])
+      ? statusParam as AssetFilterState['status']
+      : 'ALL'),
     pendingVerificationOnly: pendingParam,
   });
 
@@ -50,13 +59,14 @@ function AssetsInventoryContent() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssetForUpdate, setSelectedAssetForUpdate] = useState<Asset | null>(null);
-  const user = getActiveUser();
+  const [user, setUser] = useState<Awaited<ReturnType<typeof getCurrentProfile>>>(null);
 
   const fetchInventory = async () => {
     setLoading(true);
     try {
-      const data = await getAssets(filters);
+      const [data, profile] = await Promise.all([getAssets(filters), getCurrentProfile()]);
       setAssets(data);
+      setUser(profile);
     } catch (err) {
       console.error('Failed to fetch asset inventory', err);
     } finally {
@@ -68,7 +78,7 @@ function AssetsInventoryContent() {
     fetchInventory();
   }, [filters]);
 
-  const canCreate = ['Admin', 'Officer', 'Inspector'].includes(user.role);
+  const canCreate = user ? ['admin', 'officer'].includes(user.role) : false;
 
   return (
     <div className="space-y-6 pb-12">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FileCheck,
   UploadCloud,
@@ -12,8 +12,12 @@ import {
   X,
   Loader2,
 } from 'lucide-react';
-import { AssetDocument, AssetStatus, getRequiredDocumentsForTransition } from '@/types';
-import { uploadAssetAttachment } from '@/lib/data/assetService';
+import { AssetDocument, AssetStatus, RequiredDocumentCheck } from '@/types';
+import {
+  getRequiredDocumentsForStage,
+  getStageNumberForStatus,
+  uploadAssetAttachment,
+} from '@/lib/data/assetRepository';
 
 interface DocumentUploadWorkflowProps {
   currentStatus: AssetStatus;
@@ -29,8 +33,20 @@ export function DocumentUploadWorkflow({
   onChange,
 }: DocumentUploadWorkflowProps) {
   const [uploadingDocType, setUploadingDocType] = useState<string | null>(null);
+  const [requiredChecks, setRequiredChecks] = useState<RequiredDocumentCheck[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const requiredChecks = getRequiredDocumentsForTransition(currentStatus, targetStatus);
+  useEffect(() => {
+    let active = true;
+    getRequiredDocumentsForStage(getStageNumberForStatus(targetStatus))
+      .then((requirements) => {
+        if (active) setRequiredChecks(requirements);
+      })
+      .catch((error: unknown) => {
+        if (active) setLoadError(error instanceof Error ? error.message : 'Could not load required documents.');
+      });
+    return () => { active = false; };
+  }, [targetStatus]);
 
   const handleFileUploadForType = async (
     docType: string,
@@ -61,6 +77,7 @@ export function DocumentUploadWorkflow({
 
   return (
     <div className="space-y-4">
+      {loadError && <p role="alert" className="text-sm text-red-700">{loadError}</p>}
       {/* Required Checklist Banner */}
       <div className="bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 rounded-xl p-4 text-xs space-y-1">
         <div className="font-bold text-sky-900 dark:text-sky-200 flex items-center gap-2">

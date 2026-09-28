@@ -25,7 +25,8 @@ import {
   Layers,
 } from 'lucide-react';
 import { Asset, AssetLifecycleHistory } from '@/types';
-import { getAssetById, getAssetLifecycleHistory, getActiveUser } from '@/lib/data/assetService';
+import { getAssetById, getAssetLifecycleHistory } from '@/lib/data/assetRepository';
+import { getCurrentProfile } from '@/lib/data/profileService';
 import { getConditionBadgeColor, getStatusBadgeColor, formatINR, formatDate } from '@/lib/utils';
 import { VisualTimeline } from '@/components/lifecycle/VisualTimeline';
 import { StatusUpdateModal } from '@/components/lifecycle/StatusUpdateModal';
@@ -40,13 +41,14 @@ export default function AssetDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'timeline' | 'files'>('overview');
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-
-  const currentUser = getActiveUser();
+  const [currentRole, setCurrentRole] = useState<string | null>(null);
 
   const fetchDetails = async () => {
     setLoading(true);
     try {
       const data = await getAssetById(id);
+      const profile = await getCurrentProfile();
+      setCurrentRole(profile?.role ?? null);
       if (data) {
         setAsset(data);
         const logs = await getAssetLifecycleHistory(id);
@@ -91,9 +93,9 @@ export default function AssetDetailPage() {
   }
 
   const isRoad = asset.asset_type === 'Road';
-  const specs: any = asset.specifications || {};
-  const canEdit = ['Admin', 'Officer'].includes(currentUser.role);
-  const canUpdateStatus = ['Admin', 'Officer', 'Inspector'].includes(currentUser.role);
+  const specs = asset.specifications as unknown as Record<string, string | number | boolean | undefined>;
+  const canEdit = currentRole === 'admin' || currentRole === 'officer';
+  const canUpdateStatus = ['admin', 'officer', 'inspector'].includes(currentRole ?? '');
 
   return (
     <div className="space-y-6 pb-16">
@@ -210,8 +212,8 @@ export default function AssetDetailPage() {
             </span>
             <span className="text-xs font-bold text-white">
               {isRoad
-                ? `${specs.length_km || 0} km • ${specs.lane_count || 2} Lanes`
-                : `${specs.number_of_floors || 1} Flrs • ${specs.builtup_area_sqm || 0} m²`}
+                ? `${('length_km' in specs ? specs.length_km : 0) || 0} km • ${('lane_count' in specs ? specs.lane_count : 2) || 2} Lanes`
+                : `${('number_of_floors' in specs ? specs.number_of_floors : 1) || 1} Flrs • ${('builtup_area_sqm' in specs ? specs.builtup_area_sqm : 0) || 0} m²`}
             </span>
           </div>
         </div>
