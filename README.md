@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sampada (સંપદા)
 
-## Getting Started
+Road & Building Asset Lifecycle Management for Gandhinagar district.
 
-First, run the development server:
+## Project status
 
-```bash
+This repository is an in-progress prototype, not a production-ready government system. The initial UI contains legacy mock-backed data paths and lifecycle fields that still need to be replaced with the supplied Supabase schema. Supabase email/password login, active-profile route checks, and role-aware navigation are being established. Public registration is disabled. Local demo credentials are development-only and do not authenticate to Supabase.
+
+## Stack
+
+- Next.js 15 App Router, React 19, strict TypeScript
+- Tailwind CSS 4, Lucide icons, Recharts
+- Supabase Auth, Postgres, and Storage through `@supabase/ssr`
+
+## Local development
+
+Requirements: Node.js 20 and npm.
+
+```powershell
+npm ci
+Copy-Item .env.example .env.local
+# Set the Supabase URL and publishable key in .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app reads `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. `.env.local` is ignored by Git. Never use a service-role key in client or server app configuration. For local UI access, use the demo accounts documented in [Demo Account Setup](docs/demo-accounts.md); they use browser-local sample data only.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The supplied Supabase database is assumed to exist; this project does not run schema SQL on startup. Review [deployment setup](docs/deployment.md) before connecting data or deploying. Demo identities and manual provisioning steps are in [Demo Account Setup](docs/demo-accounts.md); implementation gaps are tracked in the [Implementation Status report](docs/implementation-status.md).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The optional demo asset/history seed is [`supabase/seed.sql`](supabase/seed.sql). It does not create Auth users or upload documents. Review the schema security blocker before running it against any non-demo database.
 
-## Learn More
+## Verification commands
 
-To learn more about Next.js, take a look at the following resources:
+```powershell
+npm run typecheck
+npm run lint
+npm run build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The current repository-wide lint baseline has errors in pre-existing prototype files. CI currently gates on typechecking and production builds; lint should be added after that baseline is repaired.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Architecture
 
-## Deploy on Vercel
+- `src/app/`: App Router pages
+- `src/components/`: asset, lifecycle, dashboard, and layout UI
+- `src/lib/supabase/`: browser and server Supabase clients
+- `src/lib/data/`: legacy data service, pending migration to schema-aligned queries
+- `supabase/schema.sql`: supplied database definition; it is not automatically applied
+- `.github/workflows/ci.yml`: GitHub Actions checks for pull requests and `main`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Security and release status
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The supplied SQL currently grants anonymous reads and broad authenticated writes. This does not satisfy the required role, asset-scope, or private-document rules. Middleware and hidden UI controls cannot secure direct Supabase API/Storage access. Do not use real government data or deploy as a production system until database RLS and Storage policies are reviewed and fixed by the database owner. This repository intentionally leaves the database schema unchanged.
+
+GitHub remote setup, Supabase account preparation, and Vercel environment configuration are documented in [docs/deployment.md](docs/deployment.md). The GitHub repository is configured as `origin`; local changes have not been committed or pushed yet.
